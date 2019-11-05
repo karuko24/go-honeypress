@@ -169,7 +169,7 @@ func main() {
     os.Exit(1)
   }
 
-	http.HandleFunc("/", indexHandler)
+  http.HandleFunc("/", indexHandler)
   http.HandleFunc("/searchreplacedb2.php", srdbHandler)
   http.HandleFunc("/wp-content/debug.log", debugLogHandler)
   http.HandleFunc("/wp-admin/admin-ajax.php", adminAjaxHandler)
