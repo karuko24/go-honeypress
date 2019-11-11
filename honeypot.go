@@ -9,6 +9,7 @@ import (
   "errors"
   "os"
   "io/ioutil"
+  "regexp"
   "go.mongodb.org/mongo-driver/mongo"
   "go.mongodb.org/mongo-driver/mongo/options"
   "go.mongodb.org/mongo-driver/mongo/readpref"
@@ -18,15 +19,51 @@ var mongoCollection *mongo.Collection
 
 type RequestData struct {
   Ip string
+  IsTor bool
   UserAgent string
   TriggeredUrl string
   Time string
   Data string
 }
 
+func checkTor(ip string) (bool) {
+  client := &http.Client{}
+
+  req, err := http.NewRequest("GET", "https://check.torproject.org/exit-addresses", nil)
+  if err != nil {
+    log.Fatal(err)
+    return false
+  }
+  req.Header.Add("user-agent", `ho-honeypress/(https://github.com/karuko24/go-honeypress)`)
+  resp, err := client.Do(req)
+  if err != nil {
+    log.Fatal(err)
+    return false
+  }
+  if resp.StatusCode == http.StatusOK {
+    bodyBytes, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+      log.Fatal(err)
+      return false
+    }
+    bodyString := string(bodyBytes)
+
+    match, err := regexp.MatchString(ip, bodyString)
+    if err != nil {
+      log.Fatal(err)
+      return false
+    }
+
+    if match {
+      return true
+    }
+  }
+  return false
+}
+
 func logPOST(mongoCollection *mongo.Collection, ip string, useragent string, triggeredUrl string, payload string) {
-  data := RequestData{ip, useragent, triggeredUrl, time.Now().String(), payload}
-  fmt.Println("%+v\n", data)
+  isTor := checkTor(ip)
+  data := RequestData{ip, isTor, useragent, triggeredUrl, time.Now().String(), payload}
   ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
   _, err := mongoCollection.InsertOne(ctx, data)
   if err != nil {
