@@ -34,7 +34,7 @@ func checkTor(ip string) (bool) {
     log.Fatal(err)
     return false
   }
-  req.Header.Add("user-agent", `ho-honeypress/(https://github.com/karuko24/go-honeypress)`)
+  req.Header.Add("user-agent", `go-honeypress/(https://github.com/karuko24/go-honeypress)`)
   resp, err := client.Do(req)
   if err != nil {
     log.Fatal(err)
