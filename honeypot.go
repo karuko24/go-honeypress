@@ -2,7 +2,6 @@ package main
 
 import (
   "fmt"
-  "log"
   "context"
   "time"
   "net/http"
@@ -31,26 +30,26 @@ func checkTor(ip string) (bool) {
 
   req, err := http.NewRequest("GET", "https://check.torproject.org/exit-addresses", nil)
   if err != nil {
-    log.Fatal(err)
+    fmt.Println(err)
     return false
   }
   req.Header.Add("user-agent", `go-honeypress/(https://github.com/karuko24/go-honeypress)`)
   resp, err := client.Do(req)
   if err != nil {
-    log.Fatal(err)
+    fmt.Println(err)
     return false
   }
   if resp.StatusCode == http.StatusOK {
     bodyBytes, err := ioutil.ReadAll(resp.Body)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
       return false
     }
     bodyString := string(bodyBytes)
 
     match, err := regexp.MatchString(ip, bodyString)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
       return false
     }
 
@@ -67,7 +66,7 @@ func logPOST(mongoCollection *mongo.Collection, ip string, useragent string, tri
   ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
   _, err := mongoCollection.InsertOne(ctx, data)
   if err != nil {
-    log.Fatal(err)
+    fmt.Println(err)
   }
 }
 
@@ -76,7 +75,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
   if r.Method == "POST" {
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
     }
     logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
   }
@@ -84,7 +83,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method == "POST" {
       body, err := ioutil.ReadAll(r.Body)
       if err != nil {
-        log.Fatal(err)
+        fmt.Println(err)
       }
       logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
     }
@@ -99,7 +98,7 @@ func srdbHandler(w http.ResponseWriter, r *http.Request) {
   if r.Method == "POST" {
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
     }
     logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
   }
@@ -116,7 +115,7 @@ func adminAjaxHandler(w http.ResponseWriter, r *http.Request) {
   if r.Method == "POST" {
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
     }
     logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
   }
@@ -128,7 +127,7 @@ func xmlrpcHandler(w http.ResponseWriter, r *http.Request) {
   if r.Method == "POST" {
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
     }
     logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
   }
@@ -149,7 +148,7 @@ func wpconfigHandler(w http.ResponseWriter, r *http.Request) {
   if r.Method == "POST" {
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
     }
     logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
   }
@@ -166,7 +165,7 @@ func wploginHandler(w http.ResponseWriter, r *http.Request) {
   if r.Method == "POST" {
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
-      log.Fatal(err)
+      fmt.Println(err)
     }
     logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
   }
@@ -192,7 +191,7 @@ func connectMongo() (*mongo.Collection, error){
     collection := client.Database("honeypot").Collection("honeypot")
     return collection, nil
   }
-  log.Fatal(err)
+  fmt.Println(err)
   return nil, errors.New("Couldn't connect to MongoDB-Server.")
 }
 
@@ -202,7 +201,7 @@ func main() {
   var err error
   mongoCollection, err = connectMongo()
   if err != nil {
-    log.Fatal(err)
+    fmt.Println(err)
     os.Exit(1)
   }
 
@@ -216,5 +215,5 @@ func main() {
   http.HandleFunc("/wp-admin", wpadminHandler)
   http.HandleFunc("/wp-admin/", wpadminHandler)
   http.HandleFunc("/wp-login.php", wploginHandler)
-  log.Fatal(http.ListenAndServe(":3000", nil))
+  fmt.Println(http.ListenAndServe(":3000", nil))
 }
