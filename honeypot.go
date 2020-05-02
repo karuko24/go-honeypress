@@ -9,6 +9,7 @@ import (
   "os"
   "io/ioutil"
   "regexp"
+  "log"
   "go.mongodb.org/mongo-driver/mongo"
   "go.mongodb.org/mongo-driver/mongo/options"
   "go.mongodb.org/mongo-driver/mongo/readpref"
@@ -18,7 +19,6 @@ var mongoCollection *mongo.Collection
 
 type RequestData struct {
   Ip string
-  IsTor bool
   UserAgent string
   TriggeredUrl string
   Time string
@@ -61,8 +61,7 @@ func checkTor(ip string) (bool) {
 }
 
 func logPOST(mongoCollection *mongo.Collection, ip string, useragent string, triggeredUrl string, payload string) {
-  isTor := checkTor(ip)
-  data := RequestData{ip, isTor, useragent, triggeredUrl, time.Now().String(), payload}
+  data := RequestData{ip, useragent, triggeredUrl, time.Now().String(), payload}
   ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
   _, err := mongoCollection.InsertOne(ctx, data)
   if err != nil {
