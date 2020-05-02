@@ -1,2 +1,2 @@
 # go-honeypress
-Golang port of https://github.com/dustyfresh/HoneyPress
+Go-Honeypress is a Wordpress/HTTP-Honeypot which logs request information to MongoDB.
