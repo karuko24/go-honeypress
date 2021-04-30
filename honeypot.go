@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"time"
 )
 
@@ -25,67 +24,32 @@ type RequestData struct {
 	Data         string
 }
 
-func checkTor(ip string) bool {
-	client := &http.Client{}
+func logPOST(mongoCollection *mongo.Collection, r *http.Request) {
+	if r.Method == "POST" {
+		var ip string = r.RemoteAddr
+		var useragent string = r.UserAgent()
+		var triggeredUrl string = r.RequestURI
 
-	req, err := http.NewRequest("GET", "https://check.torproject.org/exit-addresses", nil)
-	if err != nil {
-		fmt.Println(err)
-		return false
-	}
-	req.Header.Add("user-agent", `go-honeypress/(https://github.com/karuko24/go-honeypress)`)
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return false
-	}
-	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println(err)
-			return false
 		}
-		bodyString := string(bodyBytes)
+		var payload string = string(body)
 
-		match, err := regexp.MatchString(ip, bodyString)
+		data := RequestData{ip, useragent, triggeredUrl, time.Now().String(), payload}
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		_, err = mongoCollection.InsertOne(ctx, data)
 		if err != nil {
 			fmt.Println(err)
-			return false
 		}
-
-		if match {
-			return true
-		}
-	}
-	return false
-}
-
-func logPOST(mongoCollection *mongo.Collection, ip string, useragent string, triggeredUrl string, payload string) {
-	data := RequestData{ip, useragent, triggeredUrl, time.Now().String(), payload}
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	_, err := mongoCollection.InsertOne(ctx, data)
-	if err != nil {
-		fmt.Println(err)
 	}
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	applyHeaders(w)
-	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
-	}
+	logPOST(mongoCollection, r)
 	if r.URL.Path != "/" {
-		if r.Method == "POST" {
-			body, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				fmt.Println(err)
-			}
-			logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
-		}
+		logPOST(mongoCollection, r)
 		fmt.Fprintf(w, "")
 		return
 	}
@@ -94,13 +58,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func srdbHandler(w http.ResponseWriter, r *http.Request) {
 	applyHeaders(w)
-	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
-	}
+	logPOST(mongoCollection, r)
 	http.ServeFile(w, r, "templates/searchreplacedb2.php")
 }
 
@@ -111,25 +69,13 @@ func debugLogHandler(w http.ResponseWriter, r *http.Request) {
 
 func adminAjaxHandler(w http.ResponseWriter, r *http.Request) {
 	applyHeaders(w)
-	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
-	}
+	logPOST(mongoCollection, r)
 	fmt.Fprintf(w, "0")
 }
 
 func xmlrpcHandler(w http.ResponseWriter, r *http.Request) {
 	applyHeaders(w)
-	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
-	}
+	logPOST(mongoCollection, r)
 	if r.Method == "GET" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("XML-RPC server accepts POST requests only."))
@@ -144,13 +90,7 @@ func readmeHandler(w http.ResponseWriter, r *http.Request) {
 
 func wpconfigHandler(w http.ResponseWriter, r *http.Request) {
 	applyHeaders(w)
-	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
-	}
+	logPOST(mongoCollection, r)
 	fmt.Fprintf(w, "")
 }
 
@@ -161,13 +101,7 @@ func wpadminHandler(w http.ResponseWriter, r *http.Request) {
 
 func wploginHandler(w http.ResponseWriter, r *http.Request) {
 	applyHeaders(w)
-	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		logPOST(mongoCollection, r.RemoteAddr, r.UserAgent(), r.RequestURI, string(body))
-	}
+	logPOST(mongoCollection, r)
 	http.ServeFile(w, r, "templates/wp-login.php")
 }
 
