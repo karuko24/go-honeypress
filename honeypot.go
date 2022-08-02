@@ -156,5 +156,9 @@ func main() {
 	http.HandleFunc("/wp-admin", wpadminHandler)
 	http.HandleFunc("/wp-admin/", wpadminHandler)
 	http.HandleFunc("/wp-login.php", wploginHandler)
-	fmt.Println(http.ListenAndServe(":3000", nil))
+    if os.Getenv("HONEYPOT_PORT") == "" {
+	    fmt.Println(http.ListenAndServe(":3000", nil))
+    } else {
+        fmt.Println(http.ListenAndServe(os.Getenv("HONEYPOT_PORT"), nil))
+    }
 }
