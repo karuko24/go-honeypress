@@ -7,10 +7,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -22,11 +24,23 @@ type RequestData struct {
 	TriggeredUrl string
 	Time         string
 	Data         string
+	Country      string
 }
 
 func logPOST(mongoCollection *mongo.Collection, r *http.Request) {
 	if r.Method == "POST" {
-		var ip string = r.RemoteAddr
+		var ip string = strings.Split(r.RemoteAddr, ":")[0]
+		resp, err := http.Get(fmt.Sprintf("http://www.geoplugin.net/json.gp?ip=%s", ip))
+		if err != nil {
+			log.Print("Error while getting geolocation data")
+		}
+
+		bytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Print(err)
+		}
+
+		var country string = string(bytes)
 		var useragent string = r.UserAgent()
 		var triggeredUrl string = r.RequestURI
 
@@ -36,7 +50,7 @@ func logPOST(mongoCollection *mongo.Collection, r *http.Request) {
 		}
 		var payload string = string(body)
 
-		data := RequestData{ip, useragent, triggeredUrl, time.Now().String(), payload}
+		data := RequestData{ip, useragent, triggeredUrl, time.Now().String(), payload, country}
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		_, err = mongoCollection.InsertOne(ctx, data)
 		if err != nil {
@@ -156,9 +170,9 @@ func main() {
 	http.HandleFunc("/wp-admin", wpadminHandler)
 	http.HandleFunc("/wp-admin/", wpadminHandler)
 	http.HandleFunc("/wp-login.php", wploginHandler)
-    if os.Getenv("HONEYPOT_PORT") == "" {
-	    fmt.Println(http.ListenAndServe(":3000", nil))
-    } else {
-        fmt.Println(http.ListenAndServe(os.Getenv("HONEYPOT_PORT"), nil))
-    }
+	if os.Getenv("HONEYPOT_PORT") == "" {
+		fmt.Println(http.ListenAndServe(":3000", nil))
+	} else {
+		fmt.Println(http.ListenAndServe(os.Getenv("HONEYPOT_PORT"), nil))
+	}
 }
