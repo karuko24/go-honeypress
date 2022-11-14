@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"io"
 	"io/ioutil"
+    "encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -40,7 +41,10 @@ func logPOST(mongoCollection *mongo.Collection, r *http.Request) {
 			log.Print(err)
 		}
 
-		var country string = string(bytes)
+        var geolocationData map[string]interface{}
+        json.Unmarshal([]byte(bytes), &geolocationData)
+
+		var country string = geolocationData["geoplugin_countryName"].(string)
 		var useragent string = r.UserAgent()
 		var triggeredUrl string = r.RequestURI
 
